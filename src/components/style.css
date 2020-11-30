@@ -1,0 +1,11 @@
+a{
+  /*[>color: #0f0f0f;<]*/
+ color: #000;
+}
+a:hover{
+  color: #0f0f0f;
+  text-decoration: none;
+}
+.navbar-brand{
+  color: #fff !important;
+}

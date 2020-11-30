@@ -1,10 +1,10 @@
 import React from "react";
 import Games from "./games";
 
-export default function () {
+export default function ({ games, setGames }) {
   return (
     <>
-      <Games></Games>
+      <Games games={games} setGames={setGames}></Games>
     </>
   );
 }

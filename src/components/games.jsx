@@ -1,26 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Card from "./card";
 
-const API_URL = "http://localhost:80/api";
+//const API_URL = "http://localhost:80/api";
+import API_URL from "./url";
 
-export default function () {
-  const [games, setGames] = useState([]);
-
-  useEffect(() => {
-    getGames();
-  }, []);
-
-  async function getGames() {
-    try {
-      let url = `${API_URL}/get/games`;
-      let serverResponse = await fetch(url, { method: "GET" });
-      setGames(await serverResponse.json());
-      return;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
+export default function ({ games, setGames }) {
   if (games) {
     console.log("games are", games);
     return (

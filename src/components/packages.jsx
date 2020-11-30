@@ -4,12 +4,21 @@ import { getHeader } from "./authentication/session";
 
 //import Card from "./card";
 
-const API_URL = "http://localhost:80/api";
+import API_URL from "./url";
+import copy from "copy-to-clipboard";
 
-export default function ({ match, loggedIn }) {
+export default function ({ match, loggedIn, games }) {
+  let game = {};
+  games.forEach((value) => {
+    if (value._id === match.params.id) {
+      game = value;
+    }
+  });
+
   const [packages, setPackages] = useState([]);
 
   //hooks for input fields
+  const [playerId, setPlayerId] = useState("");
   const [emailOrNumber, setEmailOrNumber] = useState("");
   const [password, setPassword] = useState("");
   const [bkashNumber, setBkashNumber] = useState("");
@@ -18,6 +27,8 @@ export default function ({ match, loggedIn }) {
 
   const [buttonClicked, setButtonClicked] = useState(false);
   const [ordered, setOrdered] = useState(false);
+  const [noPackages, setNoPackages] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     console.log("effect has run");
@@ -27,25 +38,29 @@ export default function ({ match, loggedIn }) {
   useEffect(() => {
     if (buttonClicked) {
       const body = {};
-      body.emailOrNumber = emailOrNumber;
-      body.password = password;
-      body.accountPlatform = accountPlatform;
+      if (game.type !== "promo") {
+        body.accountPlatform = accountPlatform;
+        body.emailOrNumber = emailOrNumber;
+        body.password = password;
+      }
+
+      if (game.type === "promo") {
+        body.playerId = playerId;
+      }
+
       body.bkashNumber = bkashNumber;
       body.package = selectedPackage;
+
       order(body);
     }
   }, [buttonClicked]);
 
   async function order(body) {
+    if (!loggedIn) {
+      return;
+    }
     try {
       let url = `${API_URL}/order/place`;
-      let reqbody = new FormData();
-
-      for (var k in body) {
-        reqbody.append(k, body[k]);
-      }
-
-      console.log("requesting with the fucking body:", body);
 
       const response = await fetch(url, {
         headers: getHeader(),
@@ -53,8 +68,13 @@ export default function ({ match, loggedIn }) {
         body: JSON.stringify(body),
       });
 
-      console.log(await response.text());
+      let resbody = await response.json();
 
+      if (resbody.err) {
+        setError(resbody.err);
+        setButtonClicked(false);
+        return;
+      }
       setOrdered(true);
     } catch (err) {
       console.log(err);
@@ -65,11 +85,19 @@ export default function ({ match, loggedIn }) {
     try {
       let url = `${API_URL}/get/packages?game=${match.params.id}`;
       let serverResponse = await fetch(url, { method: "GET" });
-      setPackages(await serverResponse.json());
+      let body = await serverResponse.json();
+      if (body.length === 0) {
+        setNoPackages(true);
+      }
+      setPackages(body);
       return;
     } catch (error) {
       console.log(error);
     }
+  }
+
+  if (noPackages) {
+    return <h1>This page is not available yet</h1>;
   }
 
   if (buttonClicked) {
@@ -77,8 +105,15 @@ export default function ({ match, loggedIn }) {
       return <Redirect to="/login" />;
     }
     if (ordered) {
-      return <Redirect to="/orderhistory" />;
+      if (error === "") {
+        return <Redirect to="/orderhistory" />;
+      }
+      setOrdered(false);
+      setButtonClicked(false);
     }
+  }
+  if (packages.length === 0) {
+    return <h1>Loading</h1>;
   }
   if (packages) {
     return (
@@ -97,47 +132,73 @@ export default function ({ match, loggedIn }) {
               </p>
             </div>
             <div className="col">
+              {error === "" || (
+                <div class="alert alert-danger">
+                  <strong>Error!</strong> {error}
+                </div>
+              )}
+
               <form action="/action_page.php" className="">
-                <div className="form-group">
-                  <label for="sel1">Account Type:</label>
-                  <select
-                    class="form-control"
-                    id="sel1"
-                    onChange={(e) => {
-                      setAccountPlatform(e.target.value);
-                    }}
-                  >
-                    <option>Facebook</option>
-                    <option>Gmail</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="email">Email or Phone:</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Enter email"
-                    id="email"
-                    value={emailOrNumber}
-                    onChange={(e) => setEmailOrNumber(e.target.value)}
-                  />
-                </div>
-                <div class="form-group">
-                  <label for="pwd">Password:</label>
-                  <input
-                    type="password"
-                    class="form-control"
-                    placeholder="Enter password"
-                    id="pwd"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
+                {game.type === "promo" ? (
+                  <div class="form-group">
+                    <label for="email">Player Id:</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Enter Player Id"
+                      id="email"
+                      value={playerId}
+                      onChange={(e) => setPlayerId(e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label for="sel1">Account Type:</label>
+                      <select
+                        class="form-control"
+                        id="sel1"
+                        onChange={(e) => {
+                          setAccountPlatform(e.target.value);
+                        }}
+                      >
+                        <option>Facebook</option>
+                        <option>Gmail</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="email">Email or Phone:</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Enter email"
+                        id="email"
+                        value={emailOrNumber}
+                        onChange={(e) => setEmailOrNumber(e.target.value)}
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="pwd">Password:</label>
+                      <input
+                        type="password"
+                        class="form-control"
+                        placeholder="Enter password"
+                        id="pwd"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+                <label for="optradio">Select a Package:</label>
                 <div className="row">
                   {packages.map((value) => (
                     <>
                       <div className="col">
-                        <div class="custom-radio custom-control">
+                        <div
+                          class="custom-radio custom-control"
+                          style={{ border: "1px solid #ddd", padding: "10px" }}
+                        >
                           <input
                             className="custom-control-input"
                             type="radio"
@@ -151,7 +212,10 @@ export default function ({ match, loggedIn }) {
                             }}
                           />
                           <label class="custom-control-label" for={value._id}>
-                            {value.name} for BDT {value.price}
+                            {value.name}{" "}
+                            <i style={{ fontSize: ".8em", color: "red" }}>
+                              for {value.price} BDT
+                            </i>
                           </label>
                         </div>
                       </div>
@@ -159,8 +223,23 @@ export default function ({ match, loggedIn }) {
                   ))}
                 </div>
                 <br />
+
+                <div class="alert alert-primary">
+                  <p>
+                    <strong>Send Money: </strong>017963645720
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      copy("017963645720");
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
                 <div class="form-group">
-                  <label for="email">Bkash Number:</label>
+                  <label for="email">Your Bkash Number:</label>
                   <input
                     type="text"
                     class="form-control"

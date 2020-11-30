@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useEffect } from "react";
 import { Redirect } from "react-router-dom";
 import { setHeader } from "./authentication/session";
-const API_URL = "http://localhost:80/api";
+import API_URL from "./url";
 
-export default function ({ setUser, setLoggedIn, loggedIn }) {
+export default function ({ setLoggedIn, loggedIn }) {
   const [username, setUsername] = useState("");
   const [fullName, setfullName] = useState("");
   const [email, setEmail] = useState("");

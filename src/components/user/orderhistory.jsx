@@ -59,12 +59,12 @@ export default function OrderHistory({ match }) {
               </tr>
             </thead>
             <tbody>
-              {orders.values.map((value, index) => (
+              {orders.values.map((value) => (
                 <>
                   <tr>
                     <th scope="row">{value._id}</th>
-                    <td>{value.package.name}</td>
-                    <td>{value.package.price}</td>
+                    <td>{value.package ? value.package.name : "Deleted"}</td>
+                    <td>{value.package ? value.package.price : "Deleted"}</td>
                     <td>{value.status}</td>
                   </tr>
                 </>

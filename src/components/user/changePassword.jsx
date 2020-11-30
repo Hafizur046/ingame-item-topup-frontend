@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { useEffect } from "react";
-import { Redirect, Link } from "react-router-dom";
-import { setHeader } from "./authentication/session";
-import API_URL from "./url";
+import { getHeader } from "../authentication/session";
+import API_URL from "../url";
 
-export default function ({ setLoggedIn, loggedIn }) {
-  const [username, setUsername] = useState("");
+export default function ChangePassword() {
+  const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
 
   const [buttonClicked, setButtonClicked] = useState(false);
@@ -18,46 +17,34 @@ export default function ({ setLoggedIn, loggedIn }) {
     if (buttonClicked) {
       console.log("buttonis clicked");
       let body = {};
-      body.username = username;
-      body.password = password;
+      body.oldPassword = oldPassword;
+      body.newPassword = password;
 
-      signup(body);
+      changePass(body);
     }
   }, [buttonClicked]);
 
-  async function signup(body) {
-    let url = `${API_URL}/auth/login`;
-
-    let reqbody = new FormData();
-
-    for (var k in body) {
-      reqbody.append(k, body[k]);
-    }
+  async function changePass(body) {
+    let url = `${API_URL}/auth/changepassword`;
 
     const response = await fetch(url, {
       // headers: headers,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      //mode: "no-cors",
-      method: "POST",
+      headers: getHeader(), //mode: "no-cors",
+      method: "PATCH",
       body: JSON.stringify(body),
     });
 
     console.log("the header is :", response.headers);
     let resbody = await response.json();
-
-    setHeader(resbody);
+    console.log("the effing resbody is", resbody);
 
     if (resbody.err) {
       setError(resbody.err);
       setButtonClicked(false);
     } else {
-      setLoggedIn(true);
+      localStorage.clear();
+      return;
     }
-  }
-  if (loggedIn) {
-    return <Redirect to="/" />;
   }
 
   return (
@@ -75,20 +62,20 @@ export default function ({ setLoggedIn, loggedIn }) {
         </div>
       )}
       <div class="form-group">
-        <label for="usr">Username:</label>
+        <label for="usr">Old Password:</label>
         <input
-          type="text"
+          type="password"
           class="form-control"
           id="usr"
           required
-          value={username}
+          value={oldPassword}
           onChange={(e) => {
-            setUsername(e.target.value);
+            setOldPassword(e.target.value);
           }}
         />
       </div>
       <div class="form-group">
-        <label for="pwd">Password:</label>
+        <label for="pwd">New Password:</label>
         <input
           type="password"
           class="form-control"
@@ -103,20 +90,13 @@ export default function ({ setLoggedIn, loggedIn }) {
       <div>
         <input
           type="submit"
-          value="Login"
+          value="Apply"
           class="btn btn-primary"
           onClick={(e) => {
             e.preventDefault();
             setButtonClicked(true);
           }}
         />
-      </div>
-      <br />
-      <p>Dont Have an account?</p>
-      <div>
-        <Link to="/register" className="btn btn-primary">
-          Register
-        </Link>
       </div>
     </form>
   );
